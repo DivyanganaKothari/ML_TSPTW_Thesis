@@ -3,7 +3,7 @@ import random
 
 from pyscipopt import Model, quicksum
 #from read_excel import read_excel_data, process_data
-from read_excel import expected_dict, e, l, n
+from read_excel import updated_dict, e, l, n
 
 def tsptw2(n, c, e, l):
     """tsptw2: model for the traveling salesman problem with time windows
@@ -51,7 +51,7 @@ if __name__ == "__main__":
     # n = 10
     # width = 10
     # c,x,y,e,l = make_data(n,width)
-    c = expected_dict
+    c = updated_dict
 
     print(c)
     print(e)

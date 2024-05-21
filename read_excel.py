@@ -132,18 +132,29 @@ filtered_entries.to_excel("filtered_shipments_entries_with_mapped_ids.xlsx", ind
 
 """
 # Read the filtered shipments entries file
-filtered_entries = pd.read_excel("filtered_shipments_entries_with_mapped_ids.xlsx", nrows=30)
+filtered_entries = pd.read_excel("filtered_shipments_entries_with_mapped_ids.xlsx",skiprows=range(1, 31), nrows=40)
+
+
+# Get the unique 'MappedId' values and sort them
+unique_ids = sorted(filtered_entries['MappedId'].unique())
+
+# Create a mapping from the original IDs to sequential integers
+id_mapping = {id: i+1 for i, id in enumerate(unique_ids)}
+
+# Apply the mapping to the 'MappedId' column
+filtered_entries['MappedId'] = filtered_entries['MappedId'].map(id_mapping)
+
 
 # Create lists for start time and end time
 start_time_list = filtered_entries['Von1'].tolist()
 end_time_list = filtered_entries['Bis1'].tolist()
 
 # Create dictionaries for start time and end time
-e = {i+1: start_time for i, start_time in enumerate(start_time_list)}
-l = {i+1: end_time for i, end_time in enumerate(end_time_list)}
+e = {filtered_entries.loc[i, 'MappedId']: start_time for i, start_time in enumerate(start_time_list)}
+l = {filtered_entries.loc[i, 'MappedId']: end_time for i, end_time in enumerate(end_time_list)}
 
-#print(e)
-#print(l)
+print(e)
+print(l)
 
 n = filtered_entries['MappedId'].nunique()
 #print(n)
@@ -183,9 +194,12 @@ df.to_excel("final_distance_matrix_new.xlsx")
 
  """
 
-final_distance_matrix_new=pd.read_excel("final_distance_matrix_new.xlsx",nrows=30, usecols=range(31),index_col=0)
+final_distance_matrix_new=pd.read_excel("final_distance_matrix_new.xlsx",skiprows=range(1,31), nrows=40, usecols=range(41),index_col=0)
+#final_distance_matrix_new=pd.read_excel("final_distance_matrix_new.xlsx",nrows=21, usecols=range(22),index_col=0)
+
 # Convert the DataFrame to a nested dictionary
 nested_dict = final_distance_matrix_new.to_dict()
+
 
 # Convert to the expected format
 expected_dict = {}
@@ -193,13 +207,24 @@ for i in nested_dict:
     for j in nested_dict[i]:
         expected_dict[(i, j)] = nested_dict[i][j]
 
-# Now expected_dict has the desired format
-#print(expected_dict)
+print(expected_dict)
 
+# Create a mapping from the original keys to sequential integers
+key_mapping = {key: i + 1 for i, key in enumerate(expected_dict.keys())}
 
+# Create a new dictionary with the updated keys using the mapping
+updated_dict = {}
+counter = 1
+for key, value in expected_dict.items():
+    updated_dict[(counter // len(nested_dict) + 1 if counter % len(nested_dict) != 0 else counter // len(nested_dict), counter % len(nested_dict) if counter % len(nested_dict) != 0 else len(nested_dict))] = value
+    counter += 1
 
+print(updated_dict)
 
 """
+
+# Now expected_dict has the desired format
+
 #method for code
 def read_excel_data():
     # Your existing code to read the Excel file goes here
