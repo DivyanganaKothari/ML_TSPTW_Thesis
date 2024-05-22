@@ -3,7 +3,9 @@ import random
 
 from pyscipopt import Model, quicksum
 #from read_excel import read_excel_data, process_data
-from read_excel import updated_dict, e, l, n
+#from read_excel import updated_dict, e, l, n
+from instances_1_with_10_nodes import instances
+
 
 def tsptw2(n, c, e, l):
     """tsptw2: model for the traveling salesman problem with time windows
@@ -45,33 +47,41 @@ def tsptw2(n, c, e, l):
 
 
 if __name__ == "__main__":
-    # n = 10
-    # width = 10
     EPS = 1.e-6
-    # n = 10
-    # width = 10
-    # c,x,y,e,l = make_data(n,width)
-    c = updated_dict
+    optimal_tour_lengths = {}
 
-    print(c)
-    print(e)
-    print(l)
+    for idx, instance in enumerate(instances):
+        n = len(instance['earliest_times'])
+        c = instance['distance_matrix']  # Distance matrix
+        e = instance['earliest_times']  # Earliest times
+        l = instance['latest_times']
 
-    print("TWO INDEX MODEL")
-    model = tsptw2(n, c, e, l)
-    model.optimize()
-    print("Optimal value:", model.getObjVal())
-    x, u = model.data
-    for (i, j) in x:
-        if model.getVal(x[i, j]) > EPS:
-            print(x[i, j].name, i, j, model.getVal(x[i, j]))
+        print("TWO INDEX MODEL")
+        print(n)
+        model = tsptw2(n, c, e, l)
+        model.optimize()
 
-    start_time = [0] * (n + 1)
-    for (i, j) in u:
-        if model.getVal(u[i, j]) > EPS:
-            print(u[i, j].name, i, j, model.getVal(u[i, j]))
-            start_time[j] += model.getVal(u[i, j])
 
-    start = [i for v, i in sorted([(start_time[i], i) for i in range(1, n + 1)])]
-    print(start)
+        #Check if a feasible solution was found
 
+        if model.getStatus() == "optimal":
+            optimal_value = model.getObjVal()
+            print("Optimal value:", optimal_value)
+            optimal_tour_lengths[idx + 1] = optimal_value  # Save the optimal tour length
+
+            x, u = model.data
+            for (i, j) in x:
+                if model.getVal(x[i, j]) > EPS:
+                    print(x[i, j].name, i, j, model.getVal(x[i, j]))
+
+            start_time = [0] * (n + 1)
+            for (i, j) in u:
+                if model.getVal(u[i, j]) > EPS:
+                    print(u[i, j].name, i, j, model.getVal(u[i, j]))
+                    start_time[j] += model.getVal(u[i, j])
+
+            start = [i for v, i in sorted([(start_time[i], i) for i in range(1, n + 1)])]
+            print(start)
+        else:
+            print("No feasible solution found for instance", idx + 1)
+    print("Optimal tour lengths:", optimal_tour_lengths)
