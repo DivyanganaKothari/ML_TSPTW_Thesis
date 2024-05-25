@@ -1,10 +1,8 @@
-import math
-import random
-
 from pyscipopt import Model, quicksum
 #from read_excel import read_excel_data, process_data
 #from read_excel import updated_dict, e, l, n
-from instances_1_with_10_nodes import instances
+from instances_3_with_25_nodes import instances
+import json
 
 
 def tsptw2(n, c, e, l):
@@ -48,40 +46,49 @@ def tsptw2(n, c, e, l):
 
 if __name__ == "__main__":
     EPS = 1.e-6
+    TIME_LIMIT = 1000  # seconds
     optimal_tour_lengths = {}
+    instance_file_name = "instances_3_with_25_nodes"  # Change this dynamically
 
-    for idx, instance in enumerate(instances):
-        n = len(instance['earliest_times'])
-        c = instance['distance_matrix']  # Distance matrix
-        e = instance['earliest_times']  # Earliest times
-        l = instance['latest_times']
+    try:
+        for idx, instance in enumerate(instances):
+            n = len(instance['earliest_times'])
+            c = instance['distance_matrix']  # Distance matrix
+            e = instance['earliest_times']  # Earliest times
+            l = instance['latest_times']
 
-        print("TWO INDEX MODEL")
-        print(n)
-        model = tsptw2(n, c, e, l)
-        model.optimize()
+            print("TWO INDEX MODEL")
+            print(n)
+            model = tsptw2(n, c, e, l)
+            model.setParam('limits/time', TIME_LIMIT)  # Set a time limit
+            model.optimize()
 
+            # Check if a feasible solution was found
 
-        #Check if a feasible solution was found
+            if model.getStatus() == "optimal":
+                optimal_value = model.getObjVal()
+                print("Optimal value:", optimal_value)
+                optimal_tour_lengths[idx + 1] = optimal_value  # Save the optimal tour length
 
-        if model.getStatus() == "optimal":
-            optimal_value = model.getObjVal()
-            print("Optimal value:", optimal_value)
-            optimal_tour_lengths[idx + 1] = optimal_value  # Save the optimal tour length
+                x, u = model.data
+                for (i, j) in x:
+                    if model.getVal(x[i, j]) > EPS:
+                        print(x[i, j].name, i, j, model.getVal(x[i, j]))
 
-            x, u = model.data
-            for (i, j) in x:
-                if model.getVal(x[i, j]) > EPS:
-                    print(x[i, j].name, i, j, model.getVal(x[i, j]))
+                start_time = [0] * (n + 1)
+                for (i, j) in u:
+                    if model.getVal(u[i, j]) > EPS:
+                        print(u[i, j].name, i, j, model.getVal(u[i, j]))
+                        start_time[j] += model.getVal(u[i, j])
 
-            start_time = [0] * (n + 1)
-            for (i, j) in u:
-                if model.getVal(u[i, j]) > EPS:
-                    print(u[i, j].name, i, j, model.getVal(u[i, j]))
-                    start_time[j] += model.getVal(u[i, j])
+                start = [i for v, i in sorted([(start_time[i], i) for i in range(1, n + 1)])]
+                print(start)
+            else:
+                print("No feasible solution found for instance", idx + 1)
+    except Exception as e:
+        print(f"Error processing instance {idx + 1}: {e}")
+    output_file_name = f"optimal_tour_lengths_{instance_file_name}.json"
+    with open(output_file_name, 'w') as json_file:
+        json.dump(optimal_tour_lengths, json_file)
 
-            start = [i for v, i in sorted([(start_time[i], i) for i in range(1, n + 1)])]
-            print(start)
-        else:
-            print("No feasible solution found for instance", idx + 1)
     print("Optimal tour lengths:", optimal_tour_lengths)
